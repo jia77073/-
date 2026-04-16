@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MathRenderer } from "./MathRenderer";
-// 安全版：通过后端接口调用 Gemini
+// 安全版：直接通过后端接口调用 Gemini
 async function performOCR(base64: string) {
   try {
     const response = await fetch("/api/gemini", {
