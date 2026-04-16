@@ -5,44 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MathRenderer } from "./MathRenderer";
-// 安全版：直接通过后端接口调用 Gemini
-async function performOCR(base64: string) {
-  try {
-    const response = await fetch("/api/gemini", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: base64 }),
-    });
-
-    if (!response.ok) throw new Error("请求失败");
-    const data = await response.json();
-    return JSON.parse(data.result || "{}");
-  } catch (error) {
-    console.error("识别失败:", error);
-    return null;
-  }
-}
-
-async function generateSimilarQuestions(question: any) {
-  try {
-    const response = await fetch("/api/gemini", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: `基于以下题目生成3道举一反三的练习题：
-题目：${question.content}
-知识点：${question.knowledgePoint}`,
-      }),
-    });
-
-    if (!response.ok) throw new Error("请求失败");
-    const data = await response.json();
-    return JSON.parse(data.result || "[]");
-  } catch (error) {
-    console.error("生成题目失败:", error);
-    return [];
-  }
-}
+import { performOCR, generateSimilarQuestions } from "@/src/lib/gemini";
 import { WrongQuestionRecord, Question } from "@/src/types";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
