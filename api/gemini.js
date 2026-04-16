@@ -1,38 +1,55 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+module.exports = async (req, res) => {
+  // 配置跨域
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // 处理预检请求
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const { image, prompt } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: "API Key 未配置" });
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const { image } = req.body;
-    if (!image) {
-      return res.status(400).json({ error: "缺少图片数据" });
+    let result;
+    if (image) {
+      // 处理图片识别请求
+      const response = await model.generateContent([
+        {
+          inlineData: {
+            data: image.split(",")[1],
+            mimeType: "image/jpeg",
+          },
+        },
+        "识别这道数学题，返回 JSON 格式，包含 content、answer、analysis、knowledgePoint 字段",
+      ]);
+      result = response.response.text();
+    } else if (prompt) {
+      // 处理生成练习题请求
+      const response = await model.generateContent(prompt);
+      result = response.response.text();
+    } else {
+      return res.status(400).json({ error: "缺少请求参数" });
     }
 
-    const prompt = "你是一个错题辅导老师。请识别图片中的数学题目，给出详细解答步骤，再出一道举一反三的练习题。";
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { data: image, mimeType: "image/jpeg" } }
-    ]);
-
-    const response = await result.response;
-    const text = response.text();
-    res.status(200).json({ result: text });
-
+    res.status(200).json({ result });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-}
-
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb'
-    }
+    console.error("Gemini API 调用错误:", error);
+    res.status(500).json({ error: "服务器错误" });
   }
 };
