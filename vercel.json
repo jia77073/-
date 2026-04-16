@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/**/*.js": {
+    "api/gemini.js": {
       "runtime": "nodejs20.x"
     }
   }
