@@ -1,51 +1,42 @@
 /**
- * 安全版 Gemini 调用（通过 Vercel 后端中转）
+ * 安全版：通过后端接口调用 Gemini
+ * 不会再出现 API Key 错误
  */
-
-export async function analyzeImage(base64: string) {
+export async function performOCR(base64: string) {
   try {
     const response = await fetch("/api/gemini", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: base64 }),
     });
 
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status}`);
-    }
-
     const data = await response.json();
-    return data.result || "识别完成";
+    return JSON.parse(data.result || "{}");
   } catch (error) {
-    console.error("识别失败:", error);
-    return "识别失败，请重试";
+    console.error("OCR识别失败", error);
+    return null;
   }
 }
 
-export async function generateSimilarQuestions(originalQuestion: any) {
+export async function generateSimilarQuestions(question: any) {
   try {
     const response = await fetch("/api/gemini", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: `基于以下原题和知识点，生成3道“举一反三”的相似题目。
-知识点: ${originalQuestion.knowledgePoint}
-原题内容: ${originalQuestion.content}`,
+        prompt: `
+基于以下题目，生成3道举一反三的练习题：
+原题：${question.content}
+知识点：${question.knowledgePoint}
+返回纯数组JSON，不要多余内容。
+        `,
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status}`);
-    }
-
     const data = await response.json();
-    return data.result || [];
+    return JSON.parse(data.result || "[]");
   } catch (error) {
-    console.error("生成题目失败:", error);
+    console.error("生成题目失败", error);
     return [];
   }
 }
